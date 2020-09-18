@@ -34,7 +34,7 @@ The program also monitors the device for mouse-*move* events. If it picks up a m
 
 ## How to use it
 
-Dependencies (you must have these installed for this to work): `xdo` (library, not `xdotool` the program), `xinput`, and `perl`.
+Dependencies (you must have these installed for this to work): `xdo` (library, not `xdotool` the program), and `perl`.
 
 To compile, if you are using the `nix` package manager, you can simply run `nix-build` from the source directory. If not, you should run `gcc trackpoint-clusters.c -lX11 -lxdo -o trackpoint-clusters` from the source directory, but also, you should use `nix`.
 
