@@ -9,7 +9,13 @@
 #include <X11/Xlib.h>
 #include <xdo.h>
 
-#define DEBUG false
+// switch the DEBUG(...) definitions to enable / disable debugging logs
+#define DEBUG(...) fprintf(stderr, __VA_ARGS__) // DEBUG ON
+#undef  DEBUG
+#define DEBUG(...)                              // DEBUG OFF
+
+// sprinkle this into the code to see where things are going wrong
+#define LINENO DEBUG("%d\n", __LINE__)
 
 /*
  * The codes sent to the /dev/input file
@@ -172,11 +178,11 @@ void xdotool(int dir, key k) {
     case 0:
       break;
     case -1:
-      if (DEBUG) { printf("Sending %s down\n", keysym); }
+      DEBUG("Sending %s down\n", keysym);
       xdo_send_keysequence_window_down(xdo, CURRENTWINDOW, keysym, 0);
       break;
     case 1:
-      if (DEBUG) { printf("Sending %s up\n", keysym); }
+      DEBUG("Sending %s up\n", keysym);
       xdo_send_keysequence_window_up(xdo, CURRENTWINDOW, keysym, 0);
       break;
   }
@@ -246,12 +252,12 @@ char *deviceFile(const char *searchstr) {
   int fnum;
   fnum = atoi(fnumstr);
 
-  if (DEBUG) { printf("%s device file number is %d\n", searchstr, fnum); }
+  DEBUG("%s device file number is %d\n", searchstr, fnum);
 
   char *fname = malloc(sizeof("/dev/input/event") + 8);
   sprintf(fname, "/dev/input/event%d", fnum);
 
-  if (DEBUG) { printf("%s device file is %s\n", searchstr, fname); }
+  DEBUG("%s device file is %s\n", searchstr, fname);
 
   return fname;
 }
@@ -298,7 +304,7 @@ bool enable_click(bool enable) {
 
   ret = MappingSuccess == (enable ? restore_pointer_map() : disable_pointer_map());
 
-  if (DEBUG) { printf("%s trackpoint button clicks: %s\n", enable ? "enabled" : "disabled", ret ? "succeeded" : "failed"); }
+  DEBUG("%s trackpoint button clicks: %s\n", enable ? "enabled" : "disabled", ret ? "succeeded" : "failed");
 
   return ret;
 }
