@@ -20,7 +20,7 @@ However, when you want to use the trackpoint as a mouse (when, not if), that wor
 
 ### Limitations
 
-Due to the way xmodmap works, if you are holding modifier keys when you stop (or start) moving the mouse, the script will not be able to disable (or enable) the mouse buttons, and will freeze up. If this happens, all you have to do is take your hands off the keyboard and wait a minute for xmodmap to do it's thing, and then proceed. I haven't noticed this happen too often to me, but if it breaks your workflow, and you find a way to fix it, please send a pull request!
+Due to the way `XSetPointerMapping()` works, if you are holding a mouse buttons when you stop (or start) moving the mouse, the script will not be able to disable (or enable) the mouse buttons, and will freeze up. If this happens, all you have to do is take your hands off the mouse buttons and wait a minute for the program to do it's thing, and then proceed. I haven't noticed this happen too often to me, but if it breaks your workflow, and you find a way to fix it, please send a pull request!
 
 This script does not reset the state if you `kill` it or exit with `C-c`. If you do that, you should run `xmodmap -e 'pointer = 1 2 3'` to enable mouse clicks. If you pressed `C-c` by using the click for control, you will have to press and release the right control key on your keyboard.
 
@@ -34,13 +34,13 @@ The program also monitors the device for mouse-*move* events. If it picks up a m
 
 ## How to use it
 
-Dependencies (you must have these installed for this to work): `xdo` (library, not `xdotool` the program), `xmodmap`, `xinput`, and `perl`.
+Dependencies (you must have these installed for this to work): `xdo` (library, not `xdotool` the program), `xinput`, and `perl`.
 
 To compile, if you are using the `nix` package manager, you can simply run `nix-build` from the source directory. If not, you should run `gcc trackpoint-clusters.c -lX11 -lxdo -o trackpoint-clusters` from the source directory, but also, you should use `nix`.
 
 Before you run it, you will need your user to have permissions to read `/dev/input` files somehow. I recommend adding your user to the `input` group, but hey, you could also run the script as root if you're feeling risky.
 
-To run it, you can just run the binary trackpoint-clusters. I would set up some way to run it at system startup, but that's up to you.
+To run it, you can just run the binary `trackpoint-clusters`. I would set up some way to run it at system startup, but that's up to you.
 
 ## FAQ
 

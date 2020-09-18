@@ -9,7 +9,7 @@ stdenv.mkDerivation rec {
   src = ./.;
 
   buildInputs = [ x11 xdotool ];
-  propagatedBuildInputs = with xorg; [ xinput xmodmap perl ];
+  propagatedBuildInputs = with xorg; [ xinput perl ];
 
   buildPhase = ''
     gcc trackpoint-clusters.c -lX11 -lxdo -o ${pname}

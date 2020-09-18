@@ -30,6 +30,10 @@
 // trackpoint-cluster takes control of the mouse buttons
 #define ACTIVATE_DELAY ((struct timeval) { .tv_sec = 0, .tv_usec = 300000 })
 
+// the maximum number of buttons the mouse can take
+// (took this from MAXBUTTONCODES in xmodmap)
+#define MAX_POINTER_MAP 256
+
 // the keys we want to simulate
 typedef enum { KEY_CONTROL, KEY_SHIFT, KEY_LEVEL3, KEY_LEVEL5 } key;
 
@@ -68,16 +72,26 @@ bool key_should_down(state, key);
 void update_state(state *s, struct input_event ie);
 char *deviceFile(const char *);
 char *trackpointFile();
-void enable_click(bool enable);
+int disable_pointer_map();
+int restore_pointer_map();
+bool enable_click(bool enable);
 void apply_state_change(state old, state new);
 void activate(bool);
 
 // global variables because fuck it, this is a small program
 // no seriously, come at me.
 state s = { 0 };
-Display *dpy = NULL; // needed to run xdotool commands
+Display *dpy = NULL; // needed to run xdotool commands, and XGetPointerMapping/XSetPointerMapping
 xdo_t *xdo = NULL; // needed to run xdotool commands
 int device_trackpoint = 0; // the trackpoint device. Use read() to get events
+
+// the way the (first three) mouse buttons are mapped in X (a la xmodmap -e 'pointer=...')
+// used for storing / disabling / restoring mouse buttons when we disable them
+unsigned char pointerMap[MAX_POINTER_MAP] = { 0 };
+// a constant pointer map for disabling all mouse buttons
+const char disablePointerMap[MAX_POINTER_MAP] = { 0 };
+// the number of pointers the mouse actually takes
+int nPointerMap = 0;
 
 struct timeval time_til_activate = { 0 };
 
@@ -130,12 +144,13 @@ void main() {
 
 void init() {
 
+  // setup X
+  dpy = XOpenDisplay(NULL);
+  // setup xdotool
+  xdo = xdo_new(NULL);
+
   // start deactivated
   activate(false);
-
-  // setup xdotool
-  dpy = XOpenDisplay(NULL);
-  xdo = xdo_new(NULL);
 
   // open input device for reading
   if ((device_trackpoint = open(trackpointFile(), O_RDONLY)) == -1) {
@@ -245,23 +260,47 @@ char *trackpointFile() {
   return deviceFile("TrackPoint");
 }
 
-// enable/disable the mouse buttons as normal mouse buttons
-void enable_click(bool enable) {
-  char command[512];
-  sprintf(command, "xmodmap -e 'pointer =");
-  for(int i=1; i<=3; i++) {
-    sprintf(command+strlen(command), " %d", enable ? i : 0);
-  }
-  sprintf(command+strlen(command), "'");
-  int retval = system(command);
-  if (retval != 0) {
-    perror("system");
-  }
-  // TODO: in theory we should record the state before and return to it (rather than assuming it was "1 2 3" before)
-  // for enable: xmodmap -e 'pointer = 1 2 3'
-  // for disable: xmodmap -e 'pointer = 0 0 0'
+/*
+ * If the mouse pointer buttons are mapped to anything (i.e. not disabled),
+ * we store what they're mapped to
+ * Calling this from enable_click() covers the following three cases:
+ * 1) when we are first starting the program, this will initialize pointerMap
+ * 2) whenever we disable the mouse, we first record what it was mapped to
+ * 3) whenever we enable the mouse, we check to see if it was already enabled,
+ *    and record what it was mapped to (and then remap it to that same thing)
+ */
+void store_pointer_map() {
+  unsigned char tmpPointerMap[MAX_POINTER_MAP];
 
-  if (DEBUG) { printf("%s trackpoint button clicks with command `%s`\n", enable ? "enabled" : "disabled", command); }
+  nPointerMap = XGetPointerMapping(dpy, tmpPointerMap, MAX_POINTER_MAP);
+
+  for (int i=0; i<nPointerMap; i++) {
+    if (tmpPointerMap[i] != 0) {
+      memcpy(pointerMap, tmpPointerMap, sizeof(pointerMap));
+      break;
+    }
+  }
+}
+
+int disable_pointer_map() {
+  return XSetPointerMapping(dpy, disablePointerMap, nPointerMap);
+}
+
+int restore_pointer_map() {
+  return XSetPointerMapping(dpy, pointerMap, nPointerMap);
+}
+
+// enable/disable the mouse buttons as normal mouse buttons
+// returns whether the operation succeeded
+bool enable_click(bool enable) {
+  bool ret;
+  store_pointer_map();
+
+  ret = MappingSuccess == (enable ? restore_pointer_map() : disable_pointer_map());
+
+  if (DEBUG) { printf("%s trackpoint button clicks: %s\n", enable ? "enabled" : "disabled", ret ? "succeeded" : "failed"); }
+
+  return ret;
 }
 
 // Simulates keypresses based on the change of mouse button presses
@@ -295,5 +334,10 @@ void activate(bool activate) {
   }
 
   active = activate;
-  enable_click(!active);
+
+  // try to enable the mouse until we succeed
+  // (user takes their hands off the mouse buttons)
+  while(!enable_click(!active)) {
+    sleep(1);
+  }
 }
