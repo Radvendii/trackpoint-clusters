@@ -14,7 +14,7 @@ I recently got a nice split keyboard with thumb clusters (the [ergodox-ez](https
 
 ## Description
 
-This program turns the lenovo trackpoint mouse buttons into thumb clusters you can use while you type. It binds right click to shift, and left click to control. This puts them in easy range of each thumb, rather than needing to awkwardly bend your pinky over to reach them. It also rebinds left + middle click and right +middle click for an extra two keys. These have been bound to the little-known `ISO_LEVEL3_SHIFT` and `ISO_LEVEL5_SHIFT` keys. I was going to hack together my own implementation of keyboard layers, but then I realized linux literally has out-of-the box support for it, so I just used that.
+This program turns the lenovo trackpoint mouse buttons into thumb clusters you can use while you type. It binds right click to shift, and left click to control. This puts them in easy range of each thumb, rather than needing to awkwardly bend your pinky over to reach them. It also rebinds left + middle click and right + middle click for an extra two keys. These have been bound to the little-known `ISO_LEVEL3_SHIFT` and `ISO_LEVEL5_SHIFT` keys. I was going to hack together my own implementation of keyboard layers, but then I realized linux literally has out-of-the box support for it, so I just used that.
 
 However, when you want to use the trackpoint as a mouse (when, not if), that works seamlessly, too. This script will deactivate itself while the mouse is moving, so if you have your finger on the trackpoint, and start clicking away, they will act as normal mouse buttons rather than modifier keys.
 
@@ -22,7 +22,10 @@ However, when you want to use the trackpoint as a mouse (when, not if), that wor
 
 Due to the way `XSetPointerMapping()` works, if you are holding a mouse buttons when you stop (or start) moving the mouse, the script will not be able to disable (or enable) the mouse buttons, and will freeze up. If this happens, all you have to do is take your hands off the mouse buttons and wait a minute for the program to do it's thing, and then proceed. I haven't noticed this happen too often to me, but if it breaks your workflow, and you find a way to fix it, please send a pull request!
 
-This script does not reset the state if you `kill` it or exit with `C-c`. If you do that, you should run `xmodmap -e 'pointer = 1 2 3'` to enable mouse clicks. If you pressed `C-c` by using the click for control, you will have to press and release the right control key on your keyboard.
+This program gracefully handles `SIGINT`, `SIGTERM`, and `SIGHUP`. If you kill it with `C-c`, `kill` or by closing the controlling terminal, it will reset the mouse buttons and modifier keys.
+
+However, this program does *not* gracefully handle `SIGQUIT` or `SIGKILL` (and other more esoteric ways of killing the process). If you stop the program with `C-\` or `kill -9` (or a machete), your mouse buttons and modifier keys will not be reset. You can run `xmodmap -e 'pointer = 1 2 3'` to enable mouse clicks, and `xdotool -keyup Control_L Shift_R ISO_Level3_Shift ISO_Level5_Shift` to release all modifier keys. With shift and control, you can also just press and release the appropriate keys on the keyboard.
+
 
 ## How it works
 
@@ -60,8 +63,9 @@ I haven't actually received any questions yet, I'm just guessing
    
    - Stop using the keyboard for a minute. Lift up your hands; give the system time to reset. Okay, now try again.
    - Quit the script with C-c or killing the process.
-   - Press and then releasing all relevant modifier keys (the actual keys on the keyboard): left shift and right control.
-   - Run `xmodmap -e 'pointer = 1 2 3'` from the command line.
+   - Press and then releasing all relevant modifier keys (the actual keys on the keyboard): left control and right shift.
+   - Run `xdotool -keyup Control_L Shift_R ISO_Level3_Shift ISO_Level5_Shift`
+   - Run `xmodmap -e 'pointer = 1 2 3'`
    - Restart the X11 server.
    - Restart the computer.
    

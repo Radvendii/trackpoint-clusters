@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
+#include <signal.h>
 
 #include <linux/input.h>
 #include <fcntl.h>
@@ -71,6 +73,7 @@ typedef struct {
 } state;
 
 // advance declaration of functions
+void handle_fatal_sig(int sig);
 void init();
 void deinit();
 void xdotool(int, key);
@@ -86,6 +89,10 @@ void activate(bool);
 
 // global variables because fuck it, this is a small program
 // no seriously, come at me.
+
+// last signal received which should cause program termination
+// 0 signifies we have not received a fatal signal
+volatile sig_atomic_t fatalSig = 0;
 state s = { 0 };
 Display *dpy = NULL; // needed to run xdotool commands, and XGetPointerMapping/XSetPointerMapping
 xdo_t *xdo = NULL; // needed to run xdotool commands
@@ -126,7 +133,19 @@ void main() {
     retval = select(device_trackpoint+1, &rfds, NULL, NULL, active ? NULL : &time_til_activate);
 
     if (retval == -1) { // error
-      perror("select");
+      if (errno == EINTR) { // there was an interrupt
+        if (fatalSig) { // fatal interrupt
+          DEBUG("fatal interrupt; exiting\n");
+          break; // break out of program loop and exit
+        }
+        else { // non-fatal interrupt
+          DEBUG("non-fatal interrupt; continuing\n");
+          continue; // retry select
+        }
+      }
+      else { // some other error
+        perror("select"); // log error and continue
+      }
     }
     else if (retval == 0) { // timeout
       activate(true);
@@ -148,6 +167,12 @@ void main() {
   deinit();
 }
 
+// handles signals which should cause termination
+// this will prompt the program to clean up and exit
+void handle_fatal_sig(int sig) {
+  fatalSig = sig;
+}
+
 void init() {
 
   // setup X
@@ -163,11 +188,32 @@ void init() {
     perror("Error opening trackpoint device");
     exit(EXIT_FAILURE);
   }
+
+  // make sure we cleanup from (usual) unusual termination
+  signal(SIGINT, handle_fatal_sig);  // C-c
+  signal(SIGTERM, handle_fatal_sig); // kill's default signal
+  signal(SIGHUP, handle_fatal_sig);  // controlling terminal exits
+
+  /*
+   * Note we do not catch SIGQUIT, because IMO C-\ should be guaranteed to kill
+   * the process, without any fuckery. SIGKILL also, though we don't have a
+   * choice about that.
+   *
+   * There are lots of additional ways that you could kill the program (SIGALRM,
+   * SIGUSR1, etc). But if you're doing some weird fuckery, that's on you.
+   */
+
 }
 
 void deinit() {
   activate(false);
   close(device_trackpoint);
+
+  // after cleanup, if this was an abnormal exit, then re-raise the original signal with default handling
+  if (fatalSig) {
+    signal(fatalSig, SIG_DFL);
+    raise(fatalSig);
+  }
 }
 
 // sends a keypress event for the given key
