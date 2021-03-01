@@ -50,19 +50,32 @@ To run it, you can just run the binary `trackpoint-clusters`. I would set up som
 I have the following in my `home-manager.nix`, which sets up trackpoint-clusters as a systemd service. If you don't use nix / home-manager, you should be able to translate this into a regular systemd .service file. I leave that as an exercise to the reader.
 
 ```
-  systemd.user.services.trackpoint-cluster = {
-    Unit = {
-      Description = "trackpoint-clusters turns thinkpad trackpoint buttons into thumb clusters";
-      After = [ "graphical-session-pre.target" ];
-      PartOf = [ "graphical-session.target" ];
-    };
-    Service = {
-      Type="simple";
-      ExecStart="${pkgs.callPackage /full/path/to/trackpoint-clusters { }}/bin/trackpoint-clusters";
-    };
-    Install.WantedBy = [ "graphical-session.target" ];
-  };
+
+  systemd.user.services.trackpoint-clusters =
+    let
+      trackpoint-clusters =
+        pkgs.callPackage (pkgs.fetchFromGitHub {
+          owner = "Radvendii";
+          repo = "trackpoint-clusters";
+          rev = "315bf7329203f523d65dbd223828a1aa46b90b2e";
+          sha256 = "0iz6x32fwcz8i7vl4y5m28xlhkby1acpvxvg48sagiw5rxkzbk9s";
+        }) { };
+    in
+      {
+        Unit = {
+          Description = "trackpoint-clusters turns thinkpad trackpoint buttons into thumb clusters";
+          After = [ "graphical-session-pre.target" ];
+          PartOf = [ "graphical-session.target" ];
+        };
+        Service = {
+          Type="simple";
+          ExecStart="${trackpoint-clusters}/bin/trackpoint-clusters";
+        };
+        Install.WantedBy = [ "graphical-session.target" ];
+      };
 ```
+
+You can obviously update the `rev` and `sha256` fields to match the current revision since this is bound to get outdated at some point. You can also use `callPackage` on the path to a local copy of the repo, which is good for testing changes.
 
 ## FAQ
 
