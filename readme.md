@@ -45,6 +45,25 @@ Before you run it, you will need your user to have permissions to read `/dev/inp
 
 To run it, you can just run the binary `trackpoint-clusters`. I would set up some way to run it at system startup, but that's up to you.
 
+### Run as a service
+
+I have the following in my `home-manager.nix`, which sets up trackpoint-clusters as a systemd service. If you don't use nix / home-manager, you should be able to translate this into a regular systemd .service file. I leave that as an exercise to the reader.
+
+```
+  systemd.user.services.trackpoint-cluster = {
+    Unit = {
+      Description = "trackpoint-clusters turns thinkpad trackpoint buttons into thumb clusters";
+      After = [ "graphical-session-pre.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type="simple";
+      ExecStart="${pkgs.callPackage /full/path/to/trackpoint-clusters { }}/bin/trackpoint-clusters";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+```
+
 ## FAQ
 
 I haven't actually received any questions yet, I'm just guessing

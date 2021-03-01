@@ -208,6 +208,7 @@ void init() {
 void deinit() {
   activate(false);
   close(device_trackpoint);
+  XCloseDisplay(dpy);
 
   // after cleanup, if this was an abnormal exit, then re-raise the original signal with default handling
   if (fatalSig) {
@@ -280,16 +281,18 @@ void update_state(state *s, struct input_event ie) {
 // Find the device which includes the search string
 char *deviceFile(const char *searchstr) {
   char command[512];
-  sprintf(command, "cat /proc/bus/input/devices | perl -00 -ne'/%s.*event(\\d+)/s && print $1'", searchstr);
+  sprintf(command, "/usr/bin/env cat /proc/bus/input/devices | /usr/bin/env perl -00 -ne'/%s.*event(\\d+)/s && print $1'", searchstr);
   FILE *fp = popen(command, "r");
   if (fp == NULL) {
     perror("Failed to find device file (can't run command)");
+    pclose(fp);
     return NULL;
   }
 
   char fnumstr[8];
   if (!fgets(fnumstr, sizeof(fnumstr), fp)) {
     perror("Failed to find device file (can't get output of command)");
+    pclose(fp);
     return NULL;
   }
 

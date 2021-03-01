@@ -4,15 +4,20 @@ with pkgs;
 
 stdenv.mkDerivation rec {
   pname = "trackpoint-clusters";
-  version = "1.0.0";
+  version = "1.0.1";
 
   src = ./.;
 
   buildInputs = [ x11 xdotool ];
-  propagatedBuildInputs = with xorg; [ perl ];
 
   buildPhase = ''
-    gcc trackpoint-clusters.c -lX11 -lxdo -o ${pname}
+    gcc ${pname}.c -lX11 -lxdo -o ${pname}
+  '';
+
+  patchPhase = ''
+    substituteInPlace ${pname}.c \
+      --replace "/usr/bin/env cat" "${coreutils}/bin/cat" \
+      --replace "/usr/bin/env perl" "${perl}/bin/perl"
   '';
 
   installPhase = ''
