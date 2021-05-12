@@ -8,10 +8,10 @@ stdenv.mkDerivation rec {
 
   src = ./.;
 
-  buildInputs = [ x11 xdotool ];
+  buildInputs = [ x11 xdotool xorg.libXfixes ];
 
   buildPhase = ''
-    gcc ${pname}.c -lX11 -lxdo -o ${pname}
+    gcc ${pname}.c -lxdo -lXfixes -lX11 -o ${pname}
   '';
 
   patchPhase = ''

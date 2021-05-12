@@ -8,6 +8,10 @@ I have also tried to write clear, well-commented code, so that you can modify it
 
 All that said, I want to be clear that this program is not guaranteed to work for you, and *may in fact fuck up your system*. Any damage it does will almost certainly be reverted with a reboot, or even just restarting X11, but I don't guarantee that. If you cannot read through and understand what this program does, or don't have a friend who can do that for you, it may not be for you.
 
+### Specific Warnings
+
+This program replicates similar behaviour to `unclutter` and `xbanish`, and I have no idea how they would interact with each other.
+
 ## Motivation / Story time
 
 I recently got a nice split keyboard with thumb clusters (the [ergodox-ez](https://ergodox-ez.com/)), and then went I went to type on my thinkpad keyboard, I realized I was missing the thumb clusters. Using ctrl and shift with my left pinky finger so often is just kind of a pain. I was also missing the layers, which allowed me to have so many symbol keys within easy reach. Then I looked down at the keyboard, and it clicked. Literally, I clicked the mouse button.
@@ -17,6 +21,8 @@ I recently got a nice split keyboard with thumb clusters (the [ergodox-ez](https
 This program turns the lenovo trackpoint mouse buttons into thumb clusters you can use while you type. It binds right click to shift, and left click to control. This puts them in easy range of each thumb, rather than needing to awkwardly bend your pinky over to reach them. It also rebinds left + middle click and right + middle click for an extra two keys. These have been bound to the little-known `ISO_LEVEL3_SHIFT` and `ISO_LEVEL5_SHIFT` keys. I was going to hack together my own implementation of keyboard layers, but then I realized linux literally has out-of-the box support for it, so I just used that.
 
 However, when you want to use the trackpoint as a mouse (when, not if), that works seamlessly, too. This script will deactivate itself while the mouse is moving, so if you have your finger on the trackpoint, and start clicking away, they will act as normal mouse buttons rather than modifier keys.
+
+You should get a visual indication of when the program is active, because the mouse cursor will be hidden. That is to say, if the mouse cursor is visible, the mouse buttons will behave as normal mouse buttons. If there is no mouse on the screen, the buttons will be captured and transformed into modifier keys.
 
 ### Limitations
 
@@ -39,7 +45,7 @@ The program also monitors the device for mouse-*move* events. If it picks up a m
 
 Dependencies (you must have these installed for this to work): `xdo` (library, not `xdotool` the program), and `perl`.
 
-To compile, if you are using the `nix` package manager, you can simply run `nix-build` from the source directory. If not, you should run `gcc trackpoint-clusters.c -lX11 -lxdo -o trackpoint-clusters` from the source directory, but also, you should use `nix`.
+To compile, if you are using the `nix` package manager, you can simply run `nix-build` from the source directory. If not, you should run `gcc trackpoint-clusters.c -lxdo -lXfixes -lX11 -o trackpoint-clusters` from the source directory, but also, you should use `nix`.
 
 Before you run it, you will need your user to have permissions to read `/dev/input` files somehow. I recommend adding your user to the `input` group, but hey, you could also run the script as root if you're feeling risky.
 

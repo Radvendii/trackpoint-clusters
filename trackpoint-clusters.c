@@ -9,6 +9,7 @@
 #include <linux/input.h>
 #include <fcntl.h>
 #include <X11/Xlib.h>
+#include <X11/extensions/Xfixes.h>
 #include <xdo.h>
 
 // switch the DEBUG(...) definitions to enable / disable debugging logs
@@ -74,6 +75,7 @@ typedef struct {
 
 // advance declaration of functions
 void handle_fatal_sig(int sig);
+int swallow_x_error(Display *d, XErrorEvent *e);
 void init();
 void deinit();
 void xdotool(int, key);
@@ -83,6 +85,7 @@ char *deviceFile(const char *);
 char *trackpointFile();
 int disable_pointer_map();
 int restore_pointer_map();
+void show_cursor(bool show);
 bool enable_click(bool enable);
 void apply_state_change(state old, state new);
 void activate(bool);
@@ -173,10 +176,21 @@ void handle_fatal_sig(int sig) {
   fatalSig = sig;
 }
 
+// X11 will complain if we try to show / hide the cursor twice in a row.
+// We don't care. We'll still print errors for debugging though.
+int swallow_x_error(Display *d, XErrorEvent *e) {
+  DEBUG("got X error %d", e->error_code);
+  return 0;
+}
+
 void init() {
+
+  // Ignore X errors
+  XSetErrorHandler(swallow_x_error);
 
   // setup X
   dpy = XOpenDisplay(NULL);
+
   // setup xdotool
   xdo = xdo_new(NULL);
 
@@ -345,6 +359,16 @@ int restore_pointer_map() {
   return XSetPointerMapping(dpy, pointerMap, nPointerMap);
 }
 
+void show_cursor(bool show) {
+  if (show) {
+    XFixesShowCursor(dpy, DefaultRootWindow(dpy));
+  }
+  else {
+    XFixesHideCursor(dpy, DefaultRootWindow(dpy));
+  }
+  XFlush(dpy);
+}
+
 // enable/disable the mouse buttons as normal mouse buttons
 // returns whether the operation succeeded
 bool enable_click(bool enable) {
@@ -354,6 +378,10 @@ bool enable_click(bool enable) {
   ret = MappingSuccess == (enable ? restore_pointer_map() : disable_pointer_map());
 
   DEBUG("%s trackpoint button clicks: %s\n", enable ? "enabled" : "disabled", ret ? "succeeded" : "failed");
+
+  if (ret) {
+    show_cursor(enable);
+  }
 
   return ret;
 }
