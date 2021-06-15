@@ -295,7 +295,7 @@ void update_state(state *s, struct input_event ie) {
 // Find the device which includes the search string
 char *deviceFile(const char *searchstr) {
   char command[512];
-  sprintf(command, "/usr/bin/env cat /proc/bus/input/devices | /usr/bin/env perl -00 -ne'/%s.*event(\\d+)/s && print $1'", searchstr);
+  sprintf(command, "cat /proc/bus/input/devices | perl -00 -ne'/%s.*event(\\d+)/s && print $1'", searchstr);
   FILE *fp = popen(command, "r");
   if (fp == NULL) {
     perror("Failed to find device file (can't run command)");
