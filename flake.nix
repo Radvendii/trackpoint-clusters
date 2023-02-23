@@ -1,7 +1,7 @@
 {
   description = "turns thinkpad trackpoint buttons into keyboard thumb clusters";
   inputs = {
-    nixpkgs.url = "nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = { self, nixpkgs, flake-utils }:

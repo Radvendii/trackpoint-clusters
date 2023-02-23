@@ -3,7 +3,6 @@
 , makeWrapper
 , coreutils
 , perl
-, xlibsWrapper
 , xdotool
 , xorg
 }:
@@ -16,7 +15,7 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [ makeWrapper ];
 
-  buildInputs = [ xlibsWrapper xdotool xorg.libXfixes ];
+  buildInputs = [ xorg.libX11 xdotool xorg.libXfixes ];
 
   buildPhase = ''
     gcc ${pname}.c -lxdo -lXfixes -lX11 -o ${pname}
