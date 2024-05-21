@@ -42,7 +42,7 @@ stdenv.mkDerivation rec {
       when you move the trackpoint.
       Best used with xmodmap to remap how Level3 & Level5 shifts are interpreted.
     '';
-    license = licenses.agpl3;
+    license = licenses.agpl3Plus;
     maintainers = with maintainers; [ taeer ];
     platforms = platforms.linux;
   };
